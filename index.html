@@ -61,13 +61,12 @@
   <!-- ========== 登录页（无注册，账号由管理员预设） ========== -->
   <div id="authView" class="card" style="max-width:440px;margin:40px auto 0;">
     <h1 id="mainH1">2026年分县区人才队伍月报</h1>
-    <div class="subtitle">报规统处 · 逐月填报系统（Supabase 版）</div>
+    <div class="subtitle">报规统处 · 逐月填报系统</div>
     <h2>登录</h2>
-    <div class="field"><label>账号（邮箱用户名）</label><input id="loginEmail" type="text" placeholder="xiaodian@report.local"></div>
-    <div class="field"><label>密码</label><input id="loginPass" type="password" placeholder="••••••••"></div>
+    <div class="field"><label>账号</label><input id="loginEmail" type="text"></div>
+    <div class="field"><label>密码</label><input id="loginPass" type="password"></div>
     <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">登 录</button>
     <div class="error" id="loginErr"></div>
-    <p class="notice-info" style="margin-top:18px;">账号由管理员预设并分发给各区县，无需自行注册。忘记密码请联系管理员在后台重置。</p>
   </div>
 
   <!-- ========== 主界面（登录后） ========== -->
@@ -124,6 +123,9 @@
           <button class="btn btn-primary" onclick="saveMember()">保存本月填报</button>
         </div>
         <p class="notice" id="memberNotice"></p>
+
+        <h3>历史填写记录（本县区）</h3>
+        <div id="memberHistory"></div>
       </div>
 
       <!-- 管理员视图 -->
@@ -301,6 +303,29 @@ function renderMember(){
   document.getElementById("memberNotice").textContent = ((myRows[region]||{})[month] && row.updated_at)
     ? ("本月已填报："+new Date(row.updated_at).toLocaleString()) : "本月尚未填报";
   document.getElementById("saveStatus").textContent = "";
+  renderHistory(region);
+}
+function renderHistory(region){
+  region = region || ((currentProfile||{}).region);
+  var el = document.getElementById("memberHistory");
+  if(!el) return;
+  var months = Object.keys((myRows[region]||{})).sort().reverse(); // 月份倒序（新→旧）
+  if(months.length === 0){ el.innerHTML = '<p style="color:#999;padding:8px 0;">暂无历史填报记录。</p>'; return; }
+  var html = '<p class="notice-info">本县区各月填报情况（倒序）</p>';
+  html += '<table><thead><tr>'+
+    '<th>月份</th><th>培训·企业</th><th>培训·重点</th><th>培训·创业</th><th>公益免费</th><th>百行百业</th>'+
+    '<th>技能·省</th><th>技能·市</th><th>高级工·省</th><th>高级工·市</th><th>填报时间</th></tr></thead><tbody>';
+  months.forEach(function(m){
+    var r = (myRows[region]||{})[m] || {};
+    html += '<tr><td>'+m+'</td>'+
+      '<td>'+(+r.peixun_qiye_c||0)+'</td><td>'+(+r.peixun_zhongdian_c||0)+'</td><td>'+(+r.peixun_chuangye_c||0)+'</td>'+
+      '<td>'+(+r.peixun_gongyi_c||0)+'</td><td>'+(+r.peixun_baihang_c||0)+'</td>'+
+      '<td>'+(+r.jineng_sheng_c||0)+'</td><td>'+(+r.jineng_shi_c||0)+'</td>'+
+      '<td>'+(+r.gjg_sheng_c||0)+'</td><td>'+(+r.gjg_shi_c||0)+'</td>'+
+      '<td>'+(r.updated_at ? new Date(r.updated_at).toLocaleString() : '')+'</td></tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
 }
 function computeCum(region, month){
   var rows = myRows[region] || {};
