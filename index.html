@@ -9,6 +9,7 @@
        Project URL → SUPABASE_URL ； anon public key → SUPABASE_ANON_KEY
 ================================================================== -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #eef2f7; color: #333; min-height: 100vh; padding-bottom: 40px; }
@@ -122,6 +123,10 @@
 
       <!-- 管理员视图 -->
       <div id="adminPanel" class="hidden">
+        <div class="save-row" style="margin-bottom:10px;">
+          <span class="hint" id="exportHint">导出「截至 {所选月份}」的分县区完成情况表</span>
+          <button class="btn btn-primary" onclick="exportExcel()">导出 Excel</button>
+        </div>
         <div class="tabs">
           <div class="tab active" id="tab_cur" onclick="switchAdminTab('cur')">当月新增表</div>
           <div class="tab" id="tab_cum" onclick="switchAdminTab('cum')">累计表</div>
@@ -227,6 +232,7 @@ function renderMain(){
     document.getElementById("greeting").textContent="分县区汇总";
     document.getElementById("memberForm").classList.add("hidden");
     document.getElementById("adminPanel").classList.remove("hidden");
+    updateExportHint();
     loadAdminData();
   } else {
     badge.className="role-badge role-member";
@@ -245,8 +251,12 @@ function renderMain(){
 
 function onMonthChange(){
   if(!currentProfile) return;
-  if(currentProfile.is_admin){ renderAdminTables(); renderAdminLog(); }
+  if(currentProfile.is_admin){ renderAdminTables(); renderAdminLog(); updateExportHint(); }
   else { renderMember(); }
+}
+function updateExportHint(){
+  var ev = document.getElementById("exportHint");
+  if(ev){ ev.textContent = "导出「截至 " + document.getElementById("monthSelect").value + "」的分县区完成情况表（累计）；也请在下方确认填报记录已同步。"; }
 }
 
 /* ---------- 填报员 ---------- */
@@ -392,6 +402,124 @@ function switchAdminTab(t){
     document.getElementById("admin"+ (x==="cur"?"Cur":(x==="cum"?"Cum":"Log"))).classList.toggle("hidden", x!==t);
   });
 }
+
+/* ---------- 导出 Excel（管理员） ---------- */
+// 计算某县区 1 月 ~ 指定月份 的某一字段累计值
+function cumVal(region, month, field){
+  var rows = adminRows[region] || {}, s = 0;
+  Object.keys(rows).forEach(function(m){ if(m <= month) s += (+rows[m][field] || 0); });
+  return s;
+}
+// 生成符合《2026年分县区人才队伍建设计划完成情况》模板的 xlsx 并下载
+function exportExcel(){
+  if(!currentProfile || !currentProfile.is_admin){
+    alert("仅管理员可导出 Excel。"); return;
+  }
+  if(typeof XLSX === "undefined"){
+    alert("Excel 组件未加载，请检查网络后刷新页面。"); return;
+  }
+  var month = document.getElementById("monthSelect").value; // YYYY-MM
+  var ymParts = month.split("-");
+  var year = ymParts[0], mm = ymParts[1];
+  // 截至第 mm 月的当月最后一天
+  var endDate = new Date(+year, +mm, 0);
+  var dateLabel = "截至" + year + "年" + (+mm) + "月" + endDate.getDate() + "日";
+
+  // 逐县区累计数据（顺序：12 个区县后跟汇总，与模板一致：第10行太原市，第11-22行区县）
+  function regionRow(region){
+    var t = regionsData[region] || {};
+    return {
+      name: region,
+      p_t:  +t.peixun_target||0,  p_c:  cumVal(region, month, "peixun_c"),
+      j_t:  +t.jineng_target||0,  j_s:  cumVal(region, month, "jineng_sheng_c"), j_shi: cumVal(region, month, "jineng_shi_c"),
+      g_t:  +t.gjg_target||0,     g_s:  cumVal(region, month, "gjg_sheng_c"),   g_shi: cumVal(region, month, "gjg_shi_c")
+    };
+  }
+  // 计算单个区县：技能/高级工 总计 = 省 + 市
+  function totalsOf(r){
+    return { j_tot: r.j_s+r.j_shi, g_tot: r.g_s+r.g_shi };
+  }
+  var detail = REGIONS.map(regionRow);
+  // 太原市（汇总）行：加总
+  var tai = { name:"太原市", p_t:0,p_c:0, j_t:0,j_s:0,j_shi:0, g_t:0,g_s:0,g_shi:0 };
+  detail.forEach(function(r){
+    tai.p_t+=r.p_t; tai.p_c+=r.p_c;
+    tai.j_t+=r.j_t; tai.j_s+=r.j_s; tai.j_shi+=r.j_shi;
+    tai.g_t+=r.g_t; tai.g_s+=r.g_s; tai.g_shi+=r.g_shi;
+  });
+  var rows = [tai].concat(detail);
+
+  // ========= 构建 SheetJS 工作表 =========
+  // 行号（1 起）：1-2 标题, 4 截至, 6-9 表头, 10 太原市, 11-22 区县, 23 签名
+  function cellSheetRow(idx){ return (idx + 10); } // rows 数组下标 -> sheet 行号（第10行起）
+
+  var aoa = [];
+  // 用 23 行 × 14 列全空初始化，再填值
+  for(var i=0;i<23;i++){ aoa.push(new Array(14).fill(null)); }
+  aoa[0][0] = "2026年分县区人才队伍建设计划完成情况";           // 行1 A1
+  aoa[3][0] = "                                        " + dateLabel; // 行4 A4
+  // 表头 第6行(索引5)、第8行(索引7)、第9行(索引8)
+  aoa[5][0] = "县区";
+  aoa[5][1] = "开展补贴性职业技能培训人数";
+  aoa[5][4] = "新增技能人才人数";
+  aoa[5][9] = "新增取得高级工以上职业资格\n或职业技能等级证书的人数";
+  aoa[7][1] = "目标任务"; aoa[7][2] = "完成情况"; aoa[7][3] = "完成百分比";
+  aoa[7][4] = "目标任务"; aoa[7][5] = "完成情况"; aoa[7][8] = "完成百分比";
+  aoa[7][9] = "目标任务"; aoa[7][10] = "完成情况"; aoa[7][13] = "完成百分比";
+  aoa[8][5] = "省级"; aoa[8][6] = "市级"; aoa[8][7] = "总计";
+  aoa[8][10] = "省级"; aoa[8][11] = "市级"; aoa[8][12] = "总计";
+  // 数据行
+  rows.forEach(function(r, idx){
+    var sr = cellSheetRow(idx);            // sheet 行号
+    var a = aoa[sr-1];
+    var tot = totalsOf(r);
+    a[0] = r.name;
+    a[1] = r.p_t; a[2] = r.p_c;                                       // D 用公式
+    a[4] = r.j_t; a[5] = r.j_s; a[6] = r.j_shi; a[7] = tot.j_tot;     // I 用公式
+    a[9] = r.g_t; a[10]= r.g_s; a[11]= r.g_shi; a[12]= tot.g_tot;     // N 用公式
+  });
+  aoa[22][0] = "单位负责人：                                       处（科）室负责人：                                                     填报人：";
+
+  var ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates: false });
+  // 列宽
+  ws['!cols'] = [
+    {wch:12},{wch:12},{wch:10},{wch:10},{wch:10},
+    {wch:8},{wch:8},{wch:8},{wch:10},
+    {wch:10},{wch:8},{wch:8},{wch:8},{wch:10}
+  ];
+  // 合并单元格（与模板一致）
+  ws['!merges'] = [
+    {s:{r:0,c:0},e:{r:1,c:13}},   // A1:N2 标题
+    {s:{r:3,c:0},e:{r:3,c:13}},   // A4:N4 截至
+    {s:{r:5,c:0},e:{r:8,c:0}},    // A6:A9 县区
+    {s:{r:5,c:1},e:{r:6,c:3}},    // B6:D7 培训
+    {s:{r:5,c:4},e:{r:6,c:8}},    // E6:I7 技能
+    {s:{r:5,c:9},e:{r:6,c:13}},   // J6:N7 高级工
+    {s:{r:7,c:1},e:{r:8,c:1}},{s:{r:7,c:2},e:{r:8,c:2}},{s:{r:7,c:3},e:{r:8,c:3}},  // B/C/D 8-9
+    {s:{r:7,c:4},e:{r:8,c:4}},{s:{r:7,c:8},e:{r:8,c:8}},                              // E/I 8-9
+    {s:{r:7,c:9},e:{r:8,c:9}},{s:{r:7,c:13},e:{r:8,c:13}},                            // J/N 8-9
+    {s:{r:7,c:5},e:{r:7,c:7}},{s:{r:7,c:10},e:{r:7,c:12}},                            // F8:H8 完成情况, K8:M8
+    {s:{r:22,c:0},e:{r:22,c:13}}  // A23:N23 签名
+  ];
+  // 百分比：写入公式（带缓存值，保证未打开 Excel 也能正确显示）
+  rows.forEach(function(r, idx){
+    var sr = cellSheetRow(idx);
+    // D: 培训完成% = C/B
+    var p = +r.p_c||0, pt = +r.p_t||0;
+    ws["D"+sr] = { t:"n", f:"C"+sr+"/B"+sr, v: pt>0 ? +(p/pt) : 0, z:"0.00%" };
+    // I: 技能完成% = H/E
+    var js = +r.j_s||0, jsh = +r.j_shi||0, jt = +r.j_t||0;
+    ws["I"+sr] = { t:"n", f:"H"+sr+"/E"+sr, v: jt>0 ? +((js+jsh)/jt) : 0, z:"0.00%" };
+    // N: 高级工完成% = M/J
+    var gs = +r.g_s||0, gsh = +r.g_shi||0, gt = +r.g_t||0;
+    ws["N"+sr] = { t:"n", f:"M"+sr+"/J"+sr, v: gt>0 ? +((gs+gsh)/gt) : 0, z:"0.00%" };
+  });
+
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "5.7");
+  XLSX.writeFile(wb, "2026年分县区人才队伍建设计划完成情况（截至" + year + "年" + (+mm) + "月）.xlsx");
+}
+
 
 function pctCell(done,target){
   var d=+done||0, t=+target||0;
