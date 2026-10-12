@@ -91,26 +91,27 @@
 
       <!-- 填报员视图 -->
       <div id="memberForm" class="hidden">
+        <p class="notice-info">若当月存在净减少（如撤销、退补、更正已确认人数），可直接填写<strong>负数</strong>，系统会按当月增减量累计。</p>
         <h3>① 开展补贴性职业技能培训人数</h3>
         <div class="grid">
           <div class="field"><label>全年目标（只读）</label><input id="f_peixun_target" type="number" readonly class="readonly-input"></div>
-          <div class="field"><label>本月新增</label><input id="f_peixun_c" type="number" min="0"></div>
+          <div class="field"><label>本月新增</label><input id="f_peixun_c" type="number"></div>
         </div>
         <div class="hint">截至本月累计：<b id="c_peixun">—</b></div>
 
         <h3>② 新增技能人才人数</h3>
         <div class="field"><label>全年目标（只读）</label><input id="f_jineng_target" type="number" readonly class="readonly-input"></div>
         <div class="grid">
-          <div class="field"><label>本月新增 · 省级</label><input id="f_jineng_sheng_c" type="number" min="0"></div>
-          <div class="field"><label>本月新增 · 市级</label><input id="f_jineng_shi_c" type="number" min="0"></div>
+          <div class="field"><label>本月新增 · 省级</label><input id="f_jineng_sheng_c" type="number"></div>
+          <div class="field"><label>本月新增 · 市级</label><input id="f_jineng_shi_c" type="number"></div>
         </div>
         <div class="hint">截至本月累计：省级 <b id="c_jineng_sheng">0</b> + 市级 <b id="c_jineng_shi">0</b> = <b id="c_jineng">0</b></div>
 
         <h3>③ 新增取得高级工以上证书人数</h3>
         <div class="field"><label>全年目标（只读）</label><input id="f_gjg_target" type="number" readonly class="readonly-input"></div>
         <div class="grid">
-          <div class="field"><label>本月新增 · 省级</label><input id="f_gjg_sheng_c" type="number" min="0"></div>
-          <div class="field"><label>本月新增 · 市级</label><input id="f_gjg_shi_c" type="number" min="0"></div>
+          <div class="field"><label>本月新增 · 省级</label><input id="f_gjg_sheng_c" type="number"></div>
+          <div class="field"><label>本月新增 · 市级</label><input id="f_gjg_shi_c" type="number"></div>
         </div>
         <div class="hint">截至本月累计：省级 <b id="c_gjg_sheng">0</b> + 市级 <b id="c_gjg_shi">0</b> = <b id="c_gjg">0</b></div>
 
