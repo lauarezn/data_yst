@@ -26,16 +26,18 @@ create table public.regions (
 
 -- ========== 2. monthly_reports：每县区每月一条，存当月新增 ==========
 create table public.monthly_reports (
-  id             uuid primary key default gen_random_uuid(),
-  report_month   text not null,            -- 'YYYY-MM'，如 '2026-09'
-  region         text not null references public.regions(region),
-  peixun_c       int not null default 0,   -- 当月新增·职业技能培训
-  jineng_sheng_c int not null default 0,   -- 当月新增·技能人才省级
-  jineng_shi_c   int not null default 0,   -- 当月新增·技能人才市级
-  gjg_sheng_c    int not null default 0,   -- 当月新增·高级工省级
-  gjg_shi_c      int not null default 0,   -- 当月新增·高级工市级
-  updated_by     uuid references auth.users(id),
-  updated_at     timestamptz default now(),
+  id                   uuid primary key default gen_random_uuid(),
+  report_month         text not null,            -- 'YYYY-MM'，如 '2026-09'
+  region               text not null references public.regions(region),
+  peixun_qiye_c        int not null default 0,   -- 当月新增·培训-企业职工
+  peixun_zhongdian_c   int not null default 0,   -- 当月新增·培训-就业重点群体
+  peixun_chuangye_c    int not null default 0,   -- 当月新增·培训-创业培训
+  jineng_sheng_c       int not null default 0,   -- 当月新增·技能人才省级
+  jineng_shi_c         int not null default 0,   -- 当月新增·技能人才市级
+  gjg_sheng_c          int not null default 0,   -- 当月新增·高级工省级
+  gjg_shi_c            int not null default 0,   -- 当月新增·高级工市级
+  updated_by           uuid references auth.users(id),
+  updated_at           timestamptz default now(),
   unique (region, report_month)
 );
 
@@ -44,7 +46,7 @@ create table public.fill_logs (
   id           bigint generated always as identity primary key,
   report_month text not null,
   region       text not null,
-  field        text not null,              -- 被改字段名，如 peixun_c
+  field        text not null,              -- 被改字段名，如 peixun_qiye_c
   old_value    int,
   new_value    int,
   filled_by    uuid references auth.users(id),
@@ -130,9 +132,17 @@ create or replace function public.record_fill_log()
 returns trigger language plpgsql
 security definer set search_path = public as $$
 begin
-  if new.peixun_c is distinct from old.peixun_c then
+  if new.peixun_qiye_c is distinct from old.peixun_qiye_c then
     insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at)
-    values (new.report_month, new.region, 'peixun_c', old.peixun_c, new.peixun_c, new.updated_by, new.updated_at);
+    values (new.report_month, new.region, 'peixun_qiye_c', old.peixun_qiye_c, new.peixun_qiye_c, new.updated_by, new.updated_at);
+  end if;
+  if new.peixun_zhongdian_c is distinct from old.peixun_zhongdian_c then
+    insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at)
+    values (new.report_month, new.region, 'peixun_zhongdian_c', old.peixun_zhongdian_c, new.peixun_zhongdian_c, new.updated_by, new.updated_at);
+  end if;
+  if new.peixun_chuangye_c is distinct from old.peixun_chuangye_c then
+    insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at)
+    values (new.report_month, new.region, 'peixun_chuangye_c', old.peixun_chuangye_c, new.peixun_chuangye_c, new.updated_by, new.updated_at);
   end if;
   if new.jineng_sheng_c is distinct from old.jineng_sheng_c then
     insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at)
@@ -162,7 +172,9 @@ returns trigger language plpgsql
 security definer set search_path = public as $$
 begin
   insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values
-    (new.report_month, new.region, 'peixun_c',       0, new.peixun_c,       new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_qiye_c',       0, new.peixun_qiye_c,      new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_zhongdian_c',  0, new.peixun_zhongdian_c, new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_chuangye_c',   0, new.peixun_chuangye_c,  new.updated_by, new.updated_at),
     (new.report_month, new.region, 'jineng_sheng_c', 0, new.jineng_sheng_c, new.updated_by, new.updated_at),
     (new.report_month, new.region, 'jineng_shi_c',   0, new.jineng_shi_c,   new.updated_by, new.updated_at),
     (new.report_month, new.region, 'gjg_sheng_c',    0, new.gjg_sheng_c,    new.updated_by, new.updated_at),
