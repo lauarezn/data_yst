@@ -32,6 +32,8 @@ create table public.monthly_reports (
   peixun_qiye_c        int not null default 0,   -- 当月新增·培训-企业职工
   peixun_zhongdian_c   int not null default 0,   -- 当月新增·培训-就业重点群体
   peixun_chuangye_c    int not null default 0,   -- 当月新增·培训-创业培训
+  peixun_gongyi_c      int not null default 0,   -- 当月新增·培训-公益免费
+  peixun_baihang_c     int not null default 0,   -- 当月新增·培训-百行百业（仅市本级）
   jineng_sheng_c       int not null default 0,   -- 当月新增·技能人才省级
   jineng_shi_c         int not null default 0,   -- 当月新增·技能人才市级
   gjg_sheng_c          int not null default 0,   -- 当月新增·高级工省级
@@ -144,6 +146,14 @@ begin
     insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at)
     values (new.report_month, new.region, 'peixun_chuangye_c', old.peixun_chuangye_c, new.peixun_chuangye_c, new.updated_by, new.updated_at);
   end if;
+  if new.peixun_gongyi_c is distinct from old.peixun_gongyi_c then
+    insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at)
+    values (new.report_month, new.region, 'peixun_gongyi_c', old.peixun_gongyi_c, new.peixun_gongyi_c, new.updated_by, new.updated_at);
+  end if;
+  if new.peixun_baihang_c is distinct from old.peixun_baihang_c then
+    insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at)
+    values (new.report_month, new.region, 'peixun_baihang_c', old.peixun_baihang_c, new.peixun_baihang_c, new.updated_by, new.updated_at);
+  end if;
   if new.jineng_sheng_c is distinct from old.jineng_sheng_c then
     insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at)
     values (new.report_month, new.region, 'jineng_sheng_c', old.jineng_sheng_c, new.jineng_sheng_c, new.updated_by, new.updated_at);
@@ -175,6 +185,8 @@ begin
     (new.report_month, new.region, 'peixun_qiye_c',       0, new.peixun_qiye_c,      new.updated_by, new.updated_at),
     (new.report_month, new.region, 'peixun_zhongdian_c',  0, new.peixun_zhongdian_c, new.updated_by, new.updated_at),
     (new.report_month, new.region, 'peixun_chuangye_c',   0, new.peixun_chuangye_c,  new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_gongyi_c',     0, new.peixun_gongyi_c,    new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_baihang_c',    0, new.peixun_baihang_c,   new.updated_by, new.updated_at),
     (new.report_month, new.region, 'jineng_sheng_c', 0, new.jineng_sheng_c, new.updated_by, new.updated_at),
     (new.report_month, new.region, 'jineng_shi_c',   0, new.jineng_shi_c,   new.updated_by, new.updated_at),
     (new.report_month, new.region, 'gjg_sheng_c',    0, new.gjg_sheng_c,    new.updated_by, new.updated_at),
