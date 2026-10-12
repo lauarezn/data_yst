@@ -397,7 +397,7 @@ function pctCell(done,target){
   var d=+done||0, t=+target||0;
   if(t<=0) return '<span>—</span>';
   var p=d/t; var cls=p<0.8?"pct-low":(p<1?"pct-mid":"pct-high");
-  return '<span class="'+cls+'">'+(p*100).toFixed(1)+'%</span>';
+  return '<span class="'+cls+'">'+(p*100).toFixed(2)+'%</span>';
 }
 function setVal(id,v){ document.getElementById(id).value=(v===null||v===undefined)?"":v; }
 
