@@ -35,11 +35,16 @@ create table public.monthly_reports (
   id                   uuid primary key default gen_random_uuid(), -- 唯一记录 ID
   report_month         text not null,            -- 所属月份（如 '2026-09'）
   region               text not null,            -- 县区名（无外键，按年目标另行关联）
+  peixun_zd_biye_c     int not null default 0,   -- 当月新增·培训-重点-毕业年度高校毕业生
+  peixun_zd_chuzhong_c int not null default 0,   -- 当月新增·培训-重点-城乡未升学应届初高中
+  peixun_zd_nongcun_c  int not null default 0,   -- 当月新增·培训-重点-农村转移就业劳动力
+  peixun_zd_tuopin_c   int not null default 0,   -- 当月新增·培训-重点-脱贫劳动力
+  peixun_zd_kunnan_c   int not null default 0,   -- 当月新增·培训-重点-就业困难人员
+  peixun_zd_shiye_c    int not null default 0,   -- 当月新增·培训-重点-失业人员
   peixun_qiye_c        int not null default 0,   -- 当月新增·培训-企业职工
-  peixun_zhongdian_c   int not null default 0,   -- 当月新增·培训-就业重点群体
   peixun_chuangye_c    int not null default 0,   -- 当月新增·培训-创业培训
-  peixun_gongyi_c      int not null default 0,   -- 当月新增·培训-公益免费
   peixun_baihang_c     int not null default 0,   -- 当月新增·培训-百行百业（仅市本级）
+  peixun_gongyi_c      int not null default 0,   -- 当月新增·培训-公益类培训
   jineng_sheng_c       int not null default 0,   -- 当月新增·技能人才省级
   jineng_shi_c         int not null default 0,   -- 当月新增·技能人才市级
   gjg_sheng_c          int not null default 0,   -- 当月新增·高级工省级
@@ -142,11 +147,16 @@ create trigger trg_protect_region_target before update on public.regions for eac
 create or replace function public.record_fill_log()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
+  if new.peixun_zd_biye_c is distinct from old.peixun_zd_biye_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'peixun_zd_biye_c', old.peixun_zd_biye_c, new.peixun_zd_biye_c, new.updated_by, new.updated_at); end if;
+  if new.peixun_zd_chuzhong_c is distinct from old.peixun_zd_chuzhong_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'peixun_zd_chuzhong_c', old.peixun_zd_chuzhong_c, new.peixun_zd_chuzhong_c, new.updated_by, new.updated_at); end if;
+  if new.peixun_zd_nongcun_c is distinct from old.peixun_zd_nongcun_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'peixun_zd_nongcun_c', old.peixun_zd_nongcun_c, new.peixun_zd_nongcun_c, new.updated_by, new.updated_at); end if;
+  if new.peixun_zd_tuopin_c is distinct from old.peixun_zd_tuopin_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'peixun_zd_tuopin_c', old.peixun_zd_tuopin_c, new.peixun_zd_tuopin_c, new.updated_by, new.updated_at); end if;
+  if new.peixun_zd_kunnan_c is distinct from old.peixun_zd_kunnan_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'peixun_zd_kunnan_c', old.peixun_zd_kunnan_c, new.peixun_zd_kunnan_c, new.updated_by, new.updated_at); end if;
+  if new.peixun_zd_shiye_c is distinct from old.peixun_zd_shiye_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'peixun_zd_shiye_c', old.peixun_zd_shiye_c, new.peixun_zd_shiye_c, new.updated_by, new.updated_at); end if;
   if new.peixun_qiye_c is distinct from old.peixun_qiye_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'peixun_qiye_c', old.peixun_qiye_c, new.peixun_qiye_c, new.updated_by, new.updated_at); end if;
-  if new.peixun_zhongdian_c is distinct from old.peixun_zhongdian_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'peixun_zhongdian_c', old.peixun_zhongdian_c, new.peixun_zhongdian_c, new.updated_by, new.updated_at); end if;
   if new.peixun_chuangye_c is distinct from old.peixun_chuangye_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'peixun_chuangye_c', old.peixun_chuangye_c, new.peixun_chuangye_c, new.updated_by, new.updated_at); end if;
-  if new.peixun_gongyi_c is distinct from old.peixun_gongyi_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'peixun_gongyi_c', old.peixun_gongyi_c, new.peixun_gongyi_c, new.updated_by, new.updated_at); end if;
   if new.peixun_baihang_c is distinct from old.peixun_baihang_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'peixun_baihang_c', old.peixun_baihang_c, new.peixun_baihang_c, new.updated_by, new.updated_at); end if;
+  if new.peixun_gongyi_c is distinct from old.peixun_gongyi_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'peixun_gongyi_c', old.peixun_gongyi_c, new.peixun_gongyi_c, new.updated_by, new.updated_at); end if;
   if new.jineng_sheng_c is distinct from old.jineng_sheng_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'jineng_sheng_c', old.jineng_sheng_c, new.jineng_sheng_c, new.updated_by, new.updated_at); end if;
   if new.jineng_shi_c is distinct from old.jineng_shi_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'jineng_shi_c', old.jineng_shi_c, new.jineng_shi_c, new.updated_by, new.updated_at); end if;
   if new.gjg_sheng_c is distinct from old.gjg_sheng_c then insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values (new.report_month, new.region, 'gjg_sheng_c', old.gjg_sheng_c, new.gjg_sheng_c, new.updated_by, new.updated_at); end if;
@@ -160,13 +170,17 @@ create trigger trg_fill_log after update on public.monthly_reports for each row 
 create or replace function public.record_fill_log_insert()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  -- 首次插入一条月度记录时，把所有的字段变化都记录一遍（旧值全为 0）
   insert into public.fill_logs(report_month, region, field, old_value, new_value, filled_by, filled_at) values
-    (new.report_month, new.region, 'peixun_qiye_c',       0, new.peixun_qiye_c,      new.updated_by, new.updated_at),
-    (new.report_month, new.region, 'peixun_zhongdian_c',  0, new.peixun_zhongdian_c, new.updated_by, new.updated_at),
-    (new.report_month, new.region, 'peixun_chuangye_c',   0, new.peixun_chuangye_c,  new.updated_by, new.updated_at),
-    (new.report_month, new.region, 'peixun_gongyi_c',     0, new.peixun_gongyi_c,    new.updated_by, new.updated_at),
-    (new.report_month, new.region, 'peixun_baihang_c',    0, new.peixun_baihang_c,   new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_zd_biye_c',     0, new.peixun_zd_biye_c,     new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_zd_chuzhong_c', 0, new.peixun_zd_chuzhong_c, new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_zd_nongcun_c',  0, new.peixun_zd_nongcun_c,  new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_zd_tuopin_c',   0, new.peixun_zd_tuopin_c,   new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_zd_kunnan_c',   0, new.peixun_zd_kunnan_c,   new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_zd_shiye_c',    0, new.peixun_zd_shiye_c,    new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_qiye_c',        0, new.peixun_qiye_c,        new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_chuangye_c',    0, new.peixun_chuangye_c,    new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_baihang_c',     0, new.peixun_baihang_c,     new.updated_by, new.updated_at),
+    (new.report_month, new.region, 'peixun_gongyi_c',      0, new.peixun_gongyi_c,      new.updated_by, new.updated_at),
     (new.report_month, new.region, 'jineng_sheng_c', 0, new.jineng_sheng_c, new.updated_by, new.updated_at),
     (new.report_month, new.region, 'jineng_shi_c',   0, new.jineng_shi_c,   new.updated_by, new.updated_at),
     (new.report_month, new.region, 'gjg_sheng_c',    0, new.gjg_sheng_c,    new.updated_by, new.updated_at),
