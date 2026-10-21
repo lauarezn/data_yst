@@ -53,6 +53,7 @@
   .field-inline label { margin-right:6px; display:inline; }
   .field-inline select { width:auto; display:inline-block; }
   .history-table td.left { text-align:left; font-size:12px; color:#444; }
+  .target-input { width: 80px !important; padding: 4px 6px !important; font-size: 13px !important; }
 </style>
 </head>
 <body>
@@ -138,10 +139,12 @@
           <div class="tab active" id="tab_cur" onclick="switchAdminTab('cur')">当月新增表</div>
           <div class="tab" id="tab_cum" onclick="switchAdminTab('cum')">累计表</div>
           <div class="tab" id="tab_log" onclick="switchAdminTab('log')">填写记录</div>
+          <div class="tab" id="tab_target" onclick="switchAdminTab('target')">目标管理</div>
         </div>
         <div id="adminCur" class="hidden"></div>
         <div id="adminCum" class="hidden"></div>
         <div id="adminLog" class="hidden"></div>
+        <div id="adminTarget" class="hidden"></div>
       </div>
     </div>
   </div>
@@ -467,9 +470,61 @@ function renderAdminLog(){
   });
 }
 function switchAdminTab(t){
-  ["cur","cum","log"].forEach(function(x){
+  ["cur","cum","log","target"].forEach(function(x){
     document.getElementById("tab_"+x).classList.toggle("active", x===t);
-    document.getElementById("admin"+ (x==="cur"?"Cur":(x==="cum"?"Cum":"Log"))).classList.toggle("hidden", x!==t);
+    document.getElementById("admin"+ (x==="cur"?"Cur":(x==="cum"?"Cum":(x==="log"?"Log":"Target")))).classList.toggle("hidden", x!==t);
+  });
+  if(t==="target") renderAdminTargets();
+}
+
+/* ---------- 目标管理（管理员） ---------- */
+// 渲染可编辑的目标值表格
+function renderAdminTargets(){
+  var el = document.getElementById("adminTarget");
+  if(!el) return;
+  sb.from("regions").select("*").order("region").then(function(res){
+    if(res.error){ el.innerHTML = '<div class="notice">加载失败：'+res.error.message+'</div>'; return; }
+    var list = res.data || [];
+    var html = '<p class="notice-info">编辑修改全年目标任务（仅管理员可操作，修改将同步到数据库）。</p>';
+    html += '<table><thead><tr><th>县区</th><th>培训目标</th><th>技能人才目标</th><th>高级工以上目标</th></tr></thead><tbody>';
+    list.forEach(function(r){
+      html += '<tr><td class="req">'+r.region+'</td>'+
+        '<td><input type="number" class="target-input" data-region="'+r.region+'" data-field="peixun_target" value="'+(+r.peixun_target||0)+'"></td>'+
+        '<td><input type="number" class="target-input" data-region="'+r.region+'" data-field="jineng_target" value="'+(+r.jineng_target||0)+'"></td>'+
+        '<td><input type="number" class="target-input" data-region="'+r.region+'" data-field="gjg_target" value="'+(+r.gjg_target||0)+'"></td></tr>';
+    });
+    html += '</tbody></table>';
+    html += '<div class="save-row"><span class="status" id="targetSaveStatus"></span>'+
+      '<button class="btn btn-primary" onclick="saveAdminTargets()">保存所有目标</button></div>';
+    el.innerHTML = html;
+  });
+}
+// 批量保存目标值
+function saveAdminTargets(){
+  var statusEl = document.getElementById("targetSaveStatus");
+  if(!statusEl) return;
+  var inputs = document.querySelectorAll(".target-input");
+  var updates = {}, pending = 0, errCount = 0;
+  inputs.forEach(function(inp){
+    var region = inp.getAttribute("data-region");
+    var field = inp.getAttribute("data-field");
+    var val = +(inp.value) || 0;
+    if(!updates[region]) updates[region] = {};
+    updates[region][field] = val;
+  });
+  var keys = Object.keys(updates);
+  if(keys.length === 0){ statusEl.textContent = "没有数据可保存。"; return; }
+  statusEl.textContent = "正在保存…";
+  var done = 0;
+  keys.forEach(function(region){
+    sb.from("regions").update(updates[region]).eq("region", region).then(function(res){
+      done++;
+      if(res.error) errCount++;
+      if(done === keys.length){
+        statusEl.textContent = errCount > 0 ? ("保存完成，"+errCount+" 个失败") : "全部保存成功 ✓";
+        if(errCount > 0) renderAdminTargets(); // 重载恢复
+      }
+    });
   });
 }
 
