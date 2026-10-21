@@ -16,19 +16,21 @@ drop table if exists public.monthly_reports cascade;
 drop table if exists public.profiles cascade;
 drop table if exists public.regions cascade;
 
--- ========== 1. regions：县区目标值（唯一一份，全年不变） ==========
+-- ========== 1. regions：县区目标值（按年设定） ==========
 create table public.regions (
-  region         text primary key,
-  peixun_target  int not null default 0,   -- 全年培训目标任务
-  jineng_target  int not null default 0,   -- 全年技能人才目标任务
-  gjg_target     int not null default 0    -- 全年高级工以上目标任务
+  year           int not null,               -- 目标年份，如 2026
+  region         text not null,
+  peixun_target  int not null default 0,     -- 全年培训目标任务
+  jineng_target  int not null default 0,     -- 全年技能人才目标任务
+  gjg_target     int not null default 0,     -- 全年高级工以上目标任务
+  primary key (year, region)
 );
 
 -- ========== 2. monthly_reports：每县区每月一条，存当月新增 ==========
 create table public.monthly_reports (
   id                   uuid primary key default gen_random_uuid(),
   report_month         text not null,            -- 'YYYY-MM'，如 '2026-09'
-  region               text not null references public.regions(region),
+  region               text not null,            -- 县区名（无外键，按年目标另行关联）
   peixun_qiye_c        int not null default 0,   -- 当月新增·培训-企业职工
   peixun_zhongdian_c   int not null default 0,   -- 当月新增·培训-就业重点群体
   peixun_chuangye_c    int not null default 0,   -- 当月新增·培训-创业培训
@@ -119,7 +121,8 @@ begin
   if coalesce((select is_admin from public.profiles where id = auth.uid()), false) = false then
     if new.peixun_target is distinct from old.peixun_target
        or new.jineng_target is distinct from old.jineng_target
-       or new.gjg_target  is distinct from old.gjg_target then
+       or new.gjg_target  is distinct from old.gjg_target
+       or new.year is distinct from old.year then
       raise exception '非管理员不可修改目标任务';
     end if;
   end if;
@@ -198,20 +201,21 @@ create trigger trg_fill_log_insert after insert on public.monthly_reports
   for each row execute function public.record_fill_log_insert();
 
 -- ========== 8. 预置 12 个填报单位目标（太原市为汇总，不计入） ==========
-insert into public.regions (region, peixun_target, jineng_target, gjg_target) values
-  ('市本级',    500,   0,   0),
-  ('小店区',   2000, 1200, 600),
-  ('迎泽区',   2000, 1200, 600),
-  ('杏花岭区', 2000, 1500, 800),
-  ('尖草坪区', 2000, 1500, 500),
-  ('万柏林区', 2000, 1500, 900),
-  ('晋源区',   1700, 1200, 500),
-  ('清徐县',   1000,  400, 100),
-  ('阳曲县',    600,  400, 100),
-  ('娄烦县',    300,  200, 100),
-  ('古交市',    600,  400, 100),
-  ('综改区',   5300,  500, 500)
-on conflict (region) do nothing;
+insert into public.regions (year, region, peixun_target, jineng_target, gjg_target) values
+  (2026, '太原市',  20000, 10000, 5000),
+  (2026, '市本级',    500,    0,    0),
+  (2026, '小店区',   2000,  1200,  600),
+  (2026, '迎泽区',   2000,  1200,  600),
+  (2026, '杏花岭区', 2000,  1500,  800),
+  (2026, '尖草坪区', 2000,  1500,  500),
+  (2026, '万柏林区', 2000,  1500,  900),
+  (2026, '晋源区',   1700,  1200,  500),
+  (2026, '清徐县',   1000,   400,  100),
+  (2026, '阳曲县',    600,   400,  100),
+  (2026, '娄烦县',    300,   200,  100),
+  (2026, '古交市',    600,   400,  100),
+  (2026, '综改区',   5300,   500,  500)
+on conflict (year, region) do nothing;
 
 -- ========== 9. 注册兜底建档（如仍使用注册可保留） ==========
 create or replace function public.handle_new_user()
