@@ -13,7 +13,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #eef2f7; color: #333; min-height: 100vh; padding-bottom: 40px; }
-  .container { max-width: 980px; margin: 0 auto; padding: 24px 16px; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px 16px; }
   .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.07); padding: 24px; margin-bottom: 20px; }
   h1 { font-size: 21px; color: #1a2a4a; margin-bottom: 6px; }
   .subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
@@ -34,6 +34,7 @@
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .readonly-input { background: #f6f8fb; color: #4a5568; }
   .hint { font-size: 12px; color: #98a2b3; margin-top: 4px; }
+  .table-wrap { overflow-x: auto; }
   .save-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap: wrap; gap: 10px; }
   .status { font-size: 13px; color: #0b8043; }
   .notice { font-size: 13px; color: #d93025; margin-top: 14px; line-height: 1.7; }
@@ -53,6 +54,7 @@
   .field-inline label { margin-right:6px; display:inline; }
   .field-inline select { width:auto; display:inline-block; }
   .history-table td.left { text-align:left; font-size:12px; color:#444; }
+  #adminCur table, #adminCum table, #adminLog table, #memberHistory table { display:block; overflow-x:auto; max-width:100%; }
   .target-input { width: 80px !important; padding: 4px 6px !important; font-size: 13px !important; }
 </style>
 </head>
