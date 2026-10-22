@@ -613,10 +613,6 @@ function saveAdminTargets(){
     if(typeof renderAdminTables === 'function') renderAdminTables();
     statusEl.textContent = errCount > 0 ? ("保存完成，"+errCount+" 个失败（已重试）") : "全部保存成功 ✓";
   }
-        if(errCount > 0) renderAdminTargets();
-      }
-    });
-  });
 }
 
 // 新增目标年份（复制上一年的所有目标）
